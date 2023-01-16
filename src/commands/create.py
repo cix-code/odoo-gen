@@ -9,6 +9,12 @@ class CreateCommand(BaseCommand):
     Class that handles specific part of creating a new Odoo development project.
     """
 
+    def __init__(self, project_name) -> None:
+        super().__init__(project_name)
+
+        green_project_name = click.style(project_name, fg='green')
+        click.echo(f'Creating project {green_project_name}')
+
     @staticmethod
     def init(cli) -> None:
         """
@@ -27,8 +33,4 @@ class CreateCommand(BaseCommand):
             Args:
                 project_name (str): Technical project name.
             """
-
-            green_project_name = click.style(project_name, fg='green')
-            click.echo(f'Creating project {green_project_name}')
-
             CreateCommand(project_name)

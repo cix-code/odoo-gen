@@ -7,7 +7,7 @@ import configparser
 import click
 
 from ..constants import APP_NAME
-from ..exceptions import UserAbortException
+from ..exceptions import UserAbortError, ConfigError
 
 
 class Config:
@@ -17,7 +17,9 @@ class Config:
     """
 
     conf_path = False
-    base_path = False
+
+    # Config values
+    workspace_dir = False
 
     def __init__(self) -> None:
 
@@ -25,12 +27,12 @@ class Config:
         if not os.path.isdir(app_path):
             os.makedirs(app_path)
 
-        self.conf_path = self._prepare_conf_path()
+        self.conf_path = self._get_conf_path()
 
         self.load_config()
 
     @staticmethod
-    def _prepare_conf_path() -> str:
+    def _get_conf_path() -> str:
         """
         Prepares the conf file path.
         If the app folder doesn't exist, it gets created.
@@ -47,36 +49,47 @@ class Config:
 
     def load_config(self) -> None:
         """
-        Loads or create default configuration file
+        Loads the config values from the config file.
+        Creates the config file if it doesn't exist.
         """
 
+        # Create new config file with default values if no config exists yet
         if not os.path.exists(self.conf_path):
             click.echo('Configuration file not found. Attempting to create it.')
-            self.store_default_config()
+            self.load_default_values()
+            self.store_config_file()
 
-        print(f'Loading config from {self.conf_path}')
+        config = configparser.ConfigParser()
 
-    def store_default_config(self) -> None:
+        try:
+            config.read(self.conf_path)
+        except configparser.Error as err:
+            raise ConfigError(err.message) from err
+
+    def load_default_values(self) -> None:
+        "Sets default config values"
+
+        self.workspace_dir = os.getcwd()
+
+        click.echo(
+            f'The following will be your workspace directory: {self.workspace_dir}')
+
+        # Get user's confirmation to use current path as workspace folder
+        cont = click.confirm('Continue?', default=True)
+        if not cont:
+            important = click.style('Important!', fg='red')
+            raise UserAbortError(f'{important} Execute the `ocli` command in the '
+                                 'folder that will be your workspace.')
+
+    def store_config_file(self) -> None:
         """
-        Generates a new config file and populates it with default values
+        Stores the configuration in a config file
         """
 
         config = configparser.ConfigParser()
 
-        workspace_path = os.getcwd()
-
-        click.echo(f'The following will be your workspace directory: {workspace_path}')
-
-        cont = click.confirm('Continue?', default=True)
-        if not cont:
-            click.echo(
-                'Execute the first `ocli` command in the ' \
-                'folder that will be your workspace.')
-            raise UserAbortException()
-
-        # Set default values
         config['Workspace'] = {
-            'workspace_dir': os.getcwd(),
+            'workspace_dir': self.workspace_dir,
         }
 
         # Create a new section
@@ -84,4 +97,9 @@ class Config:
 
         # Save the config file
         with open(self.conf_path, 'w', encoding='utf8') as conf_file:
+            conf_file.writelines([
+                f'# This is the configuration file for oCLI{os.linesep}',
+                f'# Do not change this file manually{os.linesep}',
+                os.linesep
+            ])
             config.write(conf_file)
