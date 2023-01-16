@@ -1,9 +1,11 @@
 """Common part of all `commands` that oCLI can execute"""
 
-import click
+import os
+import re
+import sys
 
 from ..config.config import Config
-from ..exceptions import UserAbortException
+from ..exceptions import OCLIError, InputError
 
 
 class BaseCommand:
@@ -20,19 +22,27 @@ class BaseCommand:
 
             self.load_config()
 
-        except UserAbortException:
-            click.echo('Command terminated by user.')
+        except OCLIError as err:
+            err.display_details()
+            if err.abort:
+                sys.exit(1)
 
     def load_config(self) -> None:
         """Loads configuration"""
 
         self.config = Config()
 
-
     def _validate_project_name(self):
         """Validates the project namne to be a
         unicode string with only underscore or dash as separator.
         """
+
+        if not re.match(r'^[A-Za-z0-9_-]*$', self.project_name):
+            raise InputError(f'Invalid project name: "{self.project_name}"{os.linesep}'
+                             'Project Name may only contain '
+                             'alphanumeric characters a-z, A-Z, 0-9, '
+                             'dashes -, '
+                             'and underscores _')
 
     @staticmethod
     def init(cli) -> None:
