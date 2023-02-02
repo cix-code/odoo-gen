@@ -2,6 +2,7 @@
 Custom Exceptions
 """
 
+import sys
 import click
 
 
@@ -41,3 +42,28 @@ class InputError(OCLIError):
     Exception raised when user provides invalid input.
     """
     details = 'Command terminated due to an invalid input.'
+
+class IntegrityError(OCLIError):
+    """
+    Exception raised when inconsistency is found and process can't continue.
+    """
+    details = 'Command terminated due to an inconsistency.'
+
+def handle_error(func: callable) -> callable:
+    """
+    Decorator that wraps the decorated function
+    in a try-except which handles OCLIError
+
+    Args:
+        func (function): Function being decorated
+    """
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except OCLIError as err:
+            err.display_details()
+            if err.abort:
+                sys.exit(1)
+        return None
+
+    return inner

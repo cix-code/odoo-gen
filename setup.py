@@ -14,6 +14,7 @@ setup(
     install_requires=[
         'click==8.1.3',
         'configparser==5.3.0',
+        'PyYAML==6.0',
     ],
     entry_points='''
         [console_scripts]
