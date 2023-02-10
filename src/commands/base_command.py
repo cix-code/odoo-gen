@@ -2,7 +2,7 @@
 
 from ..config.config import Config
 from ..exceptions import handle_error
-from ..util import validate_project_name
+from ..utils.helper import validate_project_name
 
 
 class BaseCommand:

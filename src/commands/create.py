@@ -1,11 +1,16 @@
 """Dedicated space for `create` project command."""
 
 import os
+# import io
 import click
 
 from .base_command import BaseCommand
 from ..exceptions import handle_error, InputError, IntegrityError
-from ..constants import DEF_ODOO_VERSION, SUPPORTED_ODOO_VERSIONS
+from ..utils.dockerfile import DockerFile
+
+from ..constants import DEF_ODOO_VERSION
+from ..constants import SUPPORTED_ODOO_VERSIONS
+from ..constants import EXPECTED_KEY_PATHS
 
 
 class CreateCommand(BaseCommand):
@@ -15,6 +20,7 @@ class CreateCommand(BaseCommand):
 
     custom_structure: str
     odoo_version: str
+    key_paths: dict
 
     def __init__(self, project_name, odoo_version=None) -> None:
         self.odoo_version = odoo_version or DEF_ODOO_VERSION
@@ -60,7 +66,13 @@ class CreateCommand(BaseCommand):
 
         os.makedirs(project_path)
 
+        self.key_paths = {
+            'project': project_path
+        }
+
         self._create_structure(project_structure, project_path)
+
+        self._setup_key_paths()
 
     def _create_structure(self, struct: dict, path: str) -> None:
         """
@@ -73,16 +85,87 @@ class CreateCommand(BaseCommand):
         for key, val in struct.items():
             f_path = os.path.join(path, key)
 
+            # Update the path in the key_paths dict
+            f_key = val.get('key', False)
+            if f_key:
+                self.key_paths.update({f_key: f_path})
+
             if val['type'] == 'file':
                 with open(f_path, 'w', encoding='utf8'):
-                    # Create empty file
                     pass
+
                 continue
 
             os.makedirs(f_path)
 
             if 'childs' in val:
                 self._create_structure(val.get('childs'), f_path)
+
+    def _setup_key_paths(self) -> None:
+        """
+        Every folder or file in the project structure can have a key
+        corresponding to a function within this class.
+        Calling the respective function will populate the folder or
+        the file with relevant data.
+        """
+        for key in EXPECTED_KEY_PATHS:
+            key_action = f'_struct_action_{key}'
+
+            if key not in self.key_paths or not hasattr(self, key_action):
+                continue
+
+            path = self.key_paths[key]
+
+            f_key_action = getattr(self, key_action)
+            if not callable(f_key_action):
+                continue
+
+            f_key_action(path)
+
+    # 'odoo',
+    # 'custom_addons',
+    # 'docker',
+    # 'docker_file',
+    # 'docker_compose',
+    # 'env_file',
+    # 'odoo_conf'
+    def _struct_action_odoo(self, path: str) -> None:
+        """
+        Triggers the action clone odoo sources inside the odoo folder
+
+        Args:
+            path (str): The path to the odoo folder
+        """
+
+
+    def _struct_action_custom_addons(self, path: str) -> None:
+        """
+        Triggers the action clone repo or only create an empty requirements.txt file
+
+        Args:
+            path (str): The path to the addons folder
+        """
+
+    def _struct_action_docker(self, path: str) -> None:
+        """
+        Triggers the action to add entrypoint.py
+        and wait-for-psql.py inside the docker folder
+
+        Args:
+            path (str): The path to the docker folder
+        """
+
+    def _struct_action_docker_file(self, path: str) -> None:
+        """
+        Triggers the action to add content to the dockerfile
+
+        Args:
+            path (str): The path to the dockerfile
+        """
+        docker_file = DockerFile(self.odoo_version, self.key_paths)
+
+        with open(path, 'w', encoding='utf8') as file_handle:
+            file_handle.write(docker_file.get_content())
 
     @staticmethod
     def init(cli) -> None:

@@ -1,0 +1,105 @@
+FROM debian:bullseye-slim
+SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
+
+ENV LANG C.UTF-8
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        dirmngr \
+        fonts-noto-cjk \
+        gnupg \
+        libssl-dev \
+        node-less \
+        npm \
+        python3-num2words \
+        python3-pdfminer \
+        python3-pip \
+        python3-phonenumbers \
+        python3-pyldap \
+        python3-qrcode \
+        python3-renderpm \
+        python3-setuptools \
+        python3-slugify \
+        python3-vobject \
+        python3-watchdog \
+        python3-xlrd \
+        python3-xlwt \
+        xz-utils \
+        build-essential \
+        libmagic1 \
+        python3-dev \
+        libc6-dev \
+        libffi-dev \
+        zlib1g \
+        zlib1g-dev \
+        libxml2 \
+        libxml2-dev \
+        libxslt1-dev \
+        libsasl2-dev \
+        libldap2-dev \
+        libx11-dev \
+        fontconfig \
+        libfreetype6-dev \
+        libxrender-dev \
+        libxtst-dev \
+        libbz2-dev \
+        libfontconfig1-dev \
+        fonts-crosextra-carlito \
+        cargo \
+    && curl -o wkhtmltox.deb -sSL https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.bullseye_amd64.deb \
+    && echo 'cecbf5a6abbd68d324a7cd6c51ec843d71e98951 wkhtmltox.deb' | sha1sum -c - \
+    && apt-get install -y --no-install-recommends ./wkhtmltox.deb \
+    && rm -rf /var/lib/apt/lists/* wkhtmltox.deb
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+
+# Install latest postgresql-client
+RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ bullseye-pgdg main' > /etc/apt/sources.list.d/pgdg.list \
+    && GNUPGHOME="$(mktemp -d) " \
+    && export GNUPGHOME \
+    && repokey='B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8' \
+    && gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "${repokey}" \
+    && gpg --batch --armor --export "${repokey}" > /etc/apt/trusted.gpg.d/pgdg.gpg.asc \
+    && gpgconf --kill all \
+    && rm -rf "$GNUPGHOME" \
+    && apt-get update  \
+    && apt-get install --no-install-recommends -y postgresql-client \
+    && rm -f /etc/apt/sources.list.d/pgdg.list \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install rtlcss
+RUN npm install -g rtlcss
+
+# Create odoo user
+RUN useradd -ms /bin/bash -d /var/lib/odoo odoo \
+    && apt-get update \
+    && apt-get install -y locales \
+    && locale-gen "en_US.UTF-8" # Fix broken locales
+
+COPY ./odoo/requirements.txt /tmp/odoo_requirements.txt
+RUN pip3 install --upgrade pip \
+    && pip3 install wheel \
+    && pip3 install setuptools_rust \
+    && pip3 install -r /tmp/odoo_requirements.txt \
+    && rm -rf /tmp/*requirements*.txt
+
+COPY --chown=odoo:odoo ./docker/wait-for-psql.py /usr/local/bin/wait-for-psql.py
+COPY --chown=odoo:odoo ./docker/entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
+# Set the default config file
+ENV ODOO_RC /etc/odoo/odoo.conf
+
+VOLUME ["/var/lib/odoo", "/mnt/addons"]
+
+# Expose Odoo services
+EXPOSE 8069 8071 8072
+
+# Set default user when running the container
+USER odoo
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["odoo"]

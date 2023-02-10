@@ -1,10 +1,10 @@
 """
-Util functions
+Helper functions
 """
 
 import os
 import re
-from .exceptions import InputError
+from ..exceptions import InputError
 
 
 def validate_yml_file(file_name: str):

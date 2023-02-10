@@ -1,22 +1,39 @@
 """
 Static values used by oCLI
 """
-
+# App
 VERSION = '0.0.1'
 APP_NAME = 'odoo-cli'
 DEF_STRUCTURE_YML = 'default.yml'
+TAB_SIZE = 4 # Number of space chars composing a Tab
 
+# Odoo
 SUPPORTED_ODOO_VERSIONS = ['15.0', '16.0']
 DEF_ODOO_VERSION = '16.0'
+
+# Project Structure
+
+# !!! The order of elements in this list is important.
+#     E.g. Odoo repo has to cloned before dockerfile is created.
+EXPECTED_KEY_PATHS = [
+    'odoo',
+    'custom_addons',
+    'docker',
+    'docker_file',
+    'docker_compose',
+    'env_file',
+    'odoo_conf'
+]
 
 DEF_PROJECT_STRUCTURE = {
     'odoo': {
         'type': 'dir',
         'repo': 'https://github.com/odoo/odoo.git',
-        'key': 'odoo_dir'
+        'key': 'odoo'
     },
     'addons': {
         'type': 'dir',
+        'key': 'custom_addons'
     },
     'conf': {
         'type': 'dir',
@@ -47,6 +64,7 @@ DEF_PROJECT_STRUCTURE = {
     },
     'docker': {
         'type': 'dir',
+        'key': 'docker',
         'childs': {
             'DOCKERFILE': {
                 'type': 'file',

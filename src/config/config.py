@@ -7,9 +7,13 @@ import configparser
 import click
 import yaml
 
-from ..constants import APP_NAME, DEF_STRUCTURE_YML, DEF_PROJECT_STRUCTURE
+from ..constants import APP_NAME
+from ..constants import DEF_STRUCTURE_YML
+from ..constants import DEF_PROJECT_STRUCTURE
+from ..constants import EXPECTED_KEY_PATHS
+
 from ..exceptions import UserAbortError, ConfigError
-from ..util import validate_yml_file
+from ..utils.helper import validate_yml_file
 
 
 class Config:
@@ -201,8 +205,7 @@ class Config:
             return
 
         # Make sure all following keys are in the configured structure
-        expected_keys = {'env_file', 'odoo_conf',
-                         'docker_file', 'docker_compose', 'odoo_dir'}
+        expected_keys = set(EXPECTED_KEY_PATHS)
 
         if len(set(key_items).intersection(expected_keys)) != len(expected_keys):
             raise ConfigError(
