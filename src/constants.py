@@ -10,6 +10,8 @@ TAB_SIZE = 4 # Number of space chars composing a Tab
 # Odoo
 SUPPORTED_ODOO_VERSIONS = ['15.0', '16.0']
 DEF_ODOO_VERSION = '16.0'
+DEF_ODOO_REPO = 'https://github.com/odoo/odoo.git'
+ODOO_SHALLOW = True
 
 # Project Structure
 

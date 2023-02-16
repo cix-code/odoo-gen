@@ -10,7 +10,7 @@ class OCLIError(BaseException):
     "Abstract oCLI Exception"
 
     message = 'Unexpected Error'
-    details = 'Command terminated due to a configuration error.'
+    details = 'Command terminated due to an unexpected error.'
     abort = True
 
     def __init__(self, message, *args: object) -> None:
