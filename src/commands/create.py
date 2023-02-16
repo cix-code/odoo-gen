@@ -6,7 +6,8 @@ import click
 
 from .base_command import BaseCommand
 from ..exceptions import handle_error, InputError, IntegrityError
-from ..utils.dockerfile import DockerFile
+from ..utils.docker_file import DockerFile
+from ..utils.docker_compose import DockerCompose
 from ..utils.git import GitUtils
 
 from ..constants import DEF_ODOO_VERSION
@@ -158,7 +159,7 @@ class CreateCommand(BaseCommand):
         git = GitUtils(repo=odoo_repo,
                        branch=self.odoo_version,
                        shallow=ODOO_SHALLOW)
-        git.clone(path)
+        # git.clone(path)
 
     def _struct_action_custom_addons(self, path: str) -> None:
         """
@@ -200,6 +201,21 @@ class CreateCommand(BaseCommand):
 
         with open(path, 'w', encoding='utf8') as file_handle:
             file_handle.write(docker_file.get_content())
+
+    def _struct_action_docker_compose(self, path: str) -> None:
+        """
+        Triggers the action to add content to the docker_compose.yml file.
+
+        Args:
+            path (str): The path to the docker_compose.yml file
+        """
+        docker_compose = DockerCompose(self.key_paths, self.project_name)
+
+        with open(path, 'w', encoding='utf8') as file_handle:
+            file_handle.write(docker_compose.get_content())
+
+        # Todo: store this pass in a config file
+        pg_pass = docker_compose.pg_pass
 
     @staticmethod
     def init(cli) -> None:

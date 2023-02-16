@@ -163,7 +163,7 @@ class Config:
         with open(f_path, 'w', encoding='utf8') as yml_file:
             yml_file.writelines([
                 f'# This is the default project structure for oCLI{os.linesep}',
-                f'# !!! Do not changes to this file{os.linesep}',
+                f'# !!! Do not change this file{os.linesep}',
                 '# If you need a custom structure copy this file and then run the '
                 f'`ocli create [PROJECT_NAME] -s [CUSTOM_NAME].yml`{os.linesep}',
                 os.linesep

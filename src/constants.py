@@ -13,6 +13,12 @@ DEF_ODOO_VERSION = '16.0'
 DEF_ODOO_REPO = 'https://github.com/odoo/odoo.git'
 ODOO_SHALLOW = True
 
+# Docker
+DEF_DOCKER_COMPOSE_VERSION = '3.9'
+
+# PSQL
+DEF_PSQL_VERSION = '14.0'
+
 # Project Structure
 
 # !!! The order of elements in this list is important.
@@ -24,7 +30,10 @@ EXPECTED_KEY_PATHS = [
     'docker_file',
     'docker_compose',
     'env_file',
-    'odoo_conf'
+    'odoo_conf',
+    'db_data',
+    'odoo_data',
+    'conf_dir',
 ]
 
 DEF_PROJECT_STRUCTURE = {
@@ -39,10 +48,11 @@ DEF_PROJECT_STRUCTURE = {
     },
     'conf': {
         'type': 'dir',
+        'key': 'conf_dir',
         'childs': {
             'odoo.conf': {
                 'type': 'file',
-                'key': 'odoo_conf'
+                'key': 'odoo_conf',
             }
         }
     },
@@ -50,9 +60,11 @@ DEF_PROJECT_STRUCTURE = {
         'type': 'dir',
         'childs': {
             'db_data': {
+                'key': 'db_data',
                 'type': 'dir'
             },
             'odoo_data': {
+                'key': 'odoo_data',
                 'type': 'dir'
             }
         }

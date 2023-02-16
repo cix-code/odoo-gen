@@ -7,6 +7,9 @@ import re
 import subprocess
 import selectors
 import click
+import random
+import string
+
 from ..exceptions import InputError, OCLIError
 
 
@@ -76,3 +79,19 @@ def execute_command(command: list) -> None:
         if process.returncode != 0 and process.stderr:
             err = process.stderr.readline().decode("utf-8").strip()
             raise OCLIError(f'Cloning repository failed.{os.linesep}{err}')
+
+
+def generate_password(length=20) -> str:
+    """
+    Generates a random password of specified length
+
+    Args:
+        length (int, optional): Desired length. Defaults to 20.
+
+    Returns:
+        str: Generated password.
+    """
+    source = string.ascii_lowercase + string.ascii_uppercase + \
+        string.digits + string.punctuation.replace("'", '').replace('"', '')
+
+    return ''.join([random.choice(source) for i in range(0, length)])
