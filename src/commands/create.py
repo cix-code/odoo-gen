@@ -1,7 +1,7 @@
 """Dedicated space for `create` project command."""
 
 import os
-# import io
+import configparser
 import click
 
 from .base_command import BaseCommand
@@ -9,6 +9,8 @@ from ..exceptions import handle_error, InputError, IntegrityError
 from ..utils.docker_file import DockerFile
 from ..utils.docker_compose import DockerCompose
 from ..utils.git import GitUtils
+from ..utils.helper import generate_password
+from ..utils.helper import execute_command
 
 from ..constants import DEF_ODOO_VERSION
 from ..constants import DEF_ODOO_REPO
@@ -17,7 +19,7 @@ from ..constants import SUPPORTED_ODOO_VERSIONS
 from ..constants import EXPECTED_KEY_PATHS
 
 
-class CreateCommand(BaseCommand):
+class CreateCommand(BaseCommand):  # pylint: disable=too-many-instance-attributes
     """
     Class that handles specific part of creating a new Odoo development project.
     """
@@ -28,6 +30,8 @@ class CreateCommand(BaseCommand):
     git_repos: dict
     addons_repo: str | None
     no_build: bool
+    docker_network_name: str
+    pg_pass: str|None
 
     def __init__(self,
                  project_name: str,
@@ -37,6 +41,7 @@ class CreateCommand(BaseCommand):
         self.odoo_version = odoo_version or DEF_ODOO_VERSION
         self.addons_repo = addons_repo
         self.no_build = no_build
+        self.pg_pass = None
 
         super().__init__(project_name)
 
@@ -88,6 +93,8 @@ class CreateCommand(BaseCommand):
         self._create_structure(project_structure, project_path)
 
         self._setup_key_paths()
+
+        self._build_docker_image()
 
     def _create_structure(self, struct: dict, path: str) -> None:
         """
@@ -142,11 +149,6 @@ class CreateCommand(BaseCommand):
 
             f_key_action(path)
 
-    # 'custom_addons',
-    # 'docker',
-    # 'docker_compose',
-    # 'env_file',
-    # 'odoo_conf'
     def _struct_action_odoo(self, path: str) -> None:
         """
         Triggers the action clone odoo sources inside the odoo folder
@@ -159,7 +161,7 @@ class CreateCommand(BaseCommand):
         git = GitUtils(repo=odoo_repo,
                        branch=self.odoo_version,
                        shallow=ODOO_SHALLOW)
-        # git.clone(path)
+        git.clone(path)
 
     def _struct_action_custom_addons(self, path: str) -> None:
         """
@@ -181,15 +183,6 @@ class CreateCommand(BaseCommand):
         git = GitUtils(repo=addons_repo)
         git.clone(path)
 
-    def _struct_action_docker(self, path: str) -> None:
-        """
-        Triggers the action to add entrypoint.py
-        and wait-for-psql.py inside the docker folder
-
-        Args:
-            path (str): The path to the docker folder
-        """
-
     def _struct_action_docker_file(self, path: str) -> None:
         """
         Triggers the action to add content to the dockerfile
@@ -201,6 +194,16 @@ class CreateCommand(BaseCommand):
 
         with open(path, 'w', encoding='utf8') as file_handle:
             file_handle.write(docker_file.get_content())
+
+        docker_path = os.path.dirname(path)
+
+        with open(os.path.join(docker_path, 'entrypoint.sh'), 'w', encoding='utf8') \
+                as file_handle:
+            file_handle.write(docker_file.get_entrypoint_content())
+
+        with open(os.path.join(docker_path, 'wait-for-psql.py'), 'w', encoding='utf8') \
+                as file_handle:
+            file_handle.write(docker_file.get_wait_sql_content())
 
     def _struct_action_docker_compose(self, path: str) -> None:
         """
@@ -214,8 +217,70 @@ class CreateCommand(BaseCommand):
         with open(path, 'w', encoding='utf8') as file_handle:
             file_handle.write(docker_compose.get_content())
 
-        # Todo: store this pass in a config file
-        pg_pass = docker_compose.pg_pass
+        self.docker_network_name = docker_compose.network_name
+
+    def _struct_action_odoo_conf(self, path: str) -> None:
+        """
+        Triggers the action to populate the odoo.conf file.
+
+        Args:
+            path (str): The path to odoo.conf file
+        """
+        config = configparser.ConfigParser()
+        admin_pass = generate_password()
+
+        if not self.pg_pass:
+            self.pg_pass = generate_password()
+
+        config['options'] = {
+            'admin_passwd': f'"{admin_pass}"',
+            'addons_path': ','.join([
+                '/mnt/odoo/odoo/addons',
+                '/mnt/odoo/addons',
+                '/mnt/addons'
+            ]),
+            'data_dir': '/var/lib/odoo',
+            'db_host': 'db',
+            'db_port': '5432',
+            'db_user': 'odoo',
+            'db_password': f'"{self.pg_pass}"',
+            'db_name': self.project_name,
+        }
+
+        with open(path, 'w', encoding='utf8') as file_handle:
+            config.write(file_handle)
+
+    def _struct_action_env_file(self, path: str) -> None:
+        """
+        Triggers the action to populate the .env file.
+
+        Args:
+            path (str): The path to .env file
+        """
+        if not self.pg_pass:
+            self.pg_pass = generate_password()
+
+        env = {
+            'POSTGRES_USER': 'odoo',
+            'POSTGRES_PASSWORD': self.pg_pass
+        }
+
+        env_content = os.linesep.join([f'{k}="{v}"' for k, v in env.items()])
+
+        with open(path, 'w', encoding='utf8') as file_handle:
+            file_handle.write(env_content)
+
+    def _build_docker_image(self):
+        cur_path = os.getcwd()
+
+        proj_path = self.key_paths.get('project')
+        if not proj_path:
+            raise IntegrityError('Error building docker images. Project path not found.')
+
+        os.chdir(proj_path)
+        execute_command(['docker-compose', 'build'])
+        execute_command(['docker', 'network', 'create', self.docker_network_name])
+        os.chdir(cur_path)
 
     @staticmethod
     def init(cli) -> None:

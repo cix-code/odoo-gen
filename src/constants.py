@@ -17,7 +17,7 @@ ODOO_SHALLOW = True
 DEF_DOCKER_COMPOSE_VERSION = '3.9'
 
 # PSQL
-DEF_PSQL_VERSION = '14.0'
+DEF_PSQL_VERSION = '14.7'
 
 # Project Structure
 
@@ -26,7 +26,6 @@ DEF_PSQL_VERSION = '14.0'
 EXPECTED_KEY_PATHS = [
     'odoo',
     'custom_addons',
-    'docker',
     'docker_file',
     'docker_compose',
     'env_file',
@@ -78,7 +77,6 @@ DEF_PROJECT_STRUCTURE = {
     },
     'docker': {
         'type': 'dir',
-        'key': 'docker',
         'childs': {
             'DOCKERFILE': {
                 'type': 'file',

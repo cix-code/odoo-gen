@@ -6,9 +6,9 @@ import os
 import re
 import subprocess
 import selectors
-import click
 import random
 import string
+import click
 
 from ..exceptions import InputError, OCLIError
 
@@ -91,7 +91,8 @@ def generate_password(length=20) -> str:
     Returns:
         str: Generated password.
     """
-    source = string.ascii_lowercase + string.ascii_uppercase + \
-        string.digits + string.punctuation.replace("'", '').replace('"', '')
+    source = string.ascii_lowercase + \
+        string.ascii_uppercase + \
+        string.digits
 
     return ''.join([random.choice(source) for i in range(0, length)])

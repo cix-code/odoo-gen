@@ -2,8 +2,6 @@
 DockerCompose file generator class
 """
 
-import os
-import platform
 import yaml
 
 from ..constants import DEF_DOCKER_COMPOSE_VERSION
@@ -48,10 +46,7 @@ class DockerCompose:  # pylint: disable=too-few-public-methods
             'volumes': [
                 f'{db_data_path}:/var/lib/postgresql/data'
             ],
-            'environment': {
-                'POSTGRES_USER': 'odoo',
-                'POSTGRES_PASSWORD': self.pg_pass
-            },
+            'env_file': ['.env'],
             'networks': [
                 self.network_name
             ],
@@ -76,9 +71,7 @@ class DockerCompose:  # pylint: disable=too-few-public-methods
                 f'{odoo_data_path}:/var/lib/odoo',
                 f'{conf_dir_path}:/etc/odoo/',
             ],
-            'environment': {
-                'PGHOST': 'db'
-            },
+            'env_file': ['.env'],
             'ports': [
                 '8069:8069',
                 '8071:8071',
