@@ -31,7 +31,7 @@ class CreateCommand(BaseCommand):  # pylint: disable=too-many-instance-attribute
     addons_repo: str | None
     no_build: bool
     docker_network_name: str
-    pg_pass: str|None
+    pg_pass: str | None
 
     def __init__(self,
                  project_name: str,
@@ -270,16 +270,26 @@ class CreateCommand(BaseCommand):  # pylint: disable=too-many-instance-attribute
         with open(path, 'w', encoding='utf8') as file_handle:
             file_handle.write(env_content)
 
-    def _build_docker_image(self):
+    def _build_docker_image(self) -> None:
+        if self.no_build:
+            click.echo('Skip building the docker image')
+            click.echo('Execute this later by running `ocli build`')
+            return
+
         cur_path = os.getcwd()
 
         proj_path = self.key_paths.get('project')
         if not proj_path:
-            raise IntegrityError('Error building docker images. Project path not found.')
+            raise IntegrityError(
+                'Error building docker images. Project path not found.')
 
         os.chdir(proj_path)
-        execute_command(['docker-compose', 'build'])
-        execute_command(['docker', 'network', 'create', self.docker_network_name])
+        click.echo("Building the docker image...")
+        execute_command(['docker-compose', 'build', '--no-cache'])
+
+        click.echo("Creating docker network...")
+        execute_command(['docker', 'network', 'create', self.docker_network_name],
+                        allow_error=True)
         os.chdir(cur_path)
 
     @staticmethod

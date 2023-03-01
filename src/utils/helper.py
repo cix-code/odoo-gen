@@ -38,16 +38,21 @@ def validate_project_name(project_name):
     Raises:
         - InputError
     """
+    err = ''
+    if len(project_name) > 32:
+        err += os.linesep + 'Project Name may not exceed 32 characters'
 
     if not re.match(r'^[A-Za-z0-9_-]*$', project_name):
-        raise InputError(f'Invalid project name: "{project_name}"{os.linesep}'
-                         'Project Name may only contain '
-                         'alphanumeric characters a-z, A-Z, 0-9, '
-                         'dashes -, '
-                         'and underscores _')
+        err += os.linesep + \
+            'Project Name may only contain ' \
+            'alphanumeric characters a-z, A-Z, 0-9, ' \
+            'dashes -, ' \
+            'and underscores _'
+    if err:
+        raise InputError(f'Invalid project name: "{project_name}"' + err)
 
 
-def execute_command(command: list) -> None:
+def execute_command(command:list, allow_error:bool = False) -> None:
     """
     Executes a command and outputs its stdout and stderr to the console.
 
@@ -78,7 +83,8 @@ def execute_command(command: list) -> None:
 
         if process.returncode != 0 and process.stderr:
             err = process.stderr.readline().decode("utf-8").strip()
-            raise OCLIError(f'Cloning repository failed.{os.linesep}{err}')
+            if not allow_error:
+                raise OCLIError(f'Error executing the command.{os.linesep}{err}')
 
 
 def generate_password(length=20) -> str:
