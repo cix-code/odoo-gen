@@ -233,7 +233,7 @@ class CreateCommand(BaseCommand):  # pylint: disable=too-many-instance-attribute
             self.pg_pass = generate_password()
 
         config['options'] = {
-            'admin_passwd': f'"{admin_pass}"',
+            'admin_passwd': admin_pass,
             'addons_path': ','.join([
                 '/mnt/odoo/odoo/addons',
                 '/mnt/odoo/addons',
@@ -243,7 +243,7 @@ class CreateCommand(BaseCommand):  # pylint: disable=too-many-instance-attribute
             'db_host': 'db',
             'db_port': '5432',
             'db_user': 'odoo',
-            'db_password': f'"{self.pg_pass}"',
+            'db_password': self.pg_pass,
             'db_name': self.project_name,
         }
 
