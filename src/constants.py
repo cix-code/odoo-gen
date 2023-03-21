@@ -4,14 +4,13 @@ Static values used by oCLI
 # App
 VERSION = '0.0.1'
 APP_NAME = 'odoo-cli'
-DEF_STRUCTURE_YML = 'default.yml'
 TAB_SIZE = 4 # Number of space chars composing a Tab
 
 # Odoo
 SUPPORTED_ODOO_VERSIONS = ['15.0', '16.0']
 DEF_ODOO_VERSION = '16.0'
 DEF_ODOO_REPO = 'https://github.com/odoo/odoo.git'
-ODOO_SHALLOW = True
+ODOO_SHALLOW_CLONE = True
 
 # Docker
 DEF_DOCKER_COMPOSE_VERSION = '3.9'
@@ -35,6 +34,7 @@ EXPECTED_KEY_PATHS = [
     'conf_dir',
 ]
 
+DEF_STRUCTURE_YML = 'default.yml'
 DEF_PROJECT_STRUCTURE = {
     'odoo': {
         'type': 'dir',
@@ -71,9 +71,6 @@ DEF_PROJECT_STRUCTURE = {
     '.env': {
         'type': 'file',
         'key': 'env_file'
-    },
-    '.ocli.conf': {
-        'type': 'file'
     },
     'docker': {
         'type': 'dir',
