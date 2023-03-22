@@ -20,7 +20,9 @@ class CreateCommand(BaseCommand):
     @handle_error
     def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
         super().__init__()
-        self.project = Project(self, **kwargs)
+        self.project = Project(
+            command=self,
+            project_data=kwargs)
 
     @handle_error
     def execute(self) -> None:

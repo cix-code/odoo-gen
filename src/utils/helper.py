@@ -66,17 +66,26 @@ def validate_odoo_version(version: str):
               f'Allowed values are "{allowed}"'
         raise InputError(msg)
 
-def execute_command(command: list, allow_error: bool = False) -> None:
+
+def execute_command(command: list,
+                    allow_error: bool = False,
+                    return_output: bool = False) -> str:
     """
     Executes a command and outputs its stdout and stderr to the console.
 
     Args:
         command (list): List of the command and args ready to be passed to subprocess.Popen
     """
+    output = ''
+    sep = ''
+
     def read_output(file, mask):  # pylint: disable=unused-argument
         line = file.readline().decode("utf-8").strip()
         if line:
+            if return_output:
+                return line
             click.echo(line)
+        return None
 
     sel = selectors.DefaultSelector()
 
@@ -93,13 +102,18 @@ def execute_command(command: list, allow_error: bool = False) -> None:
             events = sel.select()
             for key, mask in events:
                 callback = key.data
-                callback(key.fileobj, mask)
+                line = callback(key.fileobj, mask)
+                if return_output and line:
+                    output += sep + line
+                    sep = os.linesep
 
         if process.returncode != 0 and process.stderr:
             err = process.stderr.readline().decode("utf-8").strip()
             if not allow_error:
                 raise OCLIError(
                     f'Error executing the command.{os.linesep}{err}')
+
+    return output
 
 
 def generate_password(length=20) -> str:

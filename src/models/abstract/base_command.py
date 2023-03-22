@@ -5,7 +5,6 @@ import click
 
 from .base_config import BaseConfig
 from ...constants import APP_NAME
-from ...exceptions import handle_error
 from ...exceptions import UserAbortError
 
 
@@ -53,10 +52,6 @@ class BaseCommand(BaseConfig):
             str: The path.
         """
         return self._config_path
-
-    @handle_error
-    def execute(self) -> None:
-        """Main function called to execute a command"""
 
     @staticmethod
     def init(cli) -> None:

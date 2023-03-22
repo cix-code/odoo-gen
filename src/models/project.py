@@ -15,7 +15,10 @@ from ..constants import DEF_ODOO_VERSION
 from ..constants import DEF_ODOO_REPO
 from ..constants import ODOO_SHALLOW_CLONE
 from ..constants import EXPECTED_KEY_PATHS
-from ..exceptions import ConfigError, IntegrityError
+from ..exceptions import \
+    ConfigError, \
+    IntegrityError, \
+    UserAbortError
 
 from ..utils.helper import validate_yml_file
 from ..utils.helper import validate_project_name
@@ -25,6 +28,38 @@ from ..utils.helper import execute_command
 from ..utils.git import GitUtils
 from ..utils.docker_file import DockerFile
 from ..utils.docker_compose import DockerCompose
+
+
+def use_project_path(func: callable) -> callable:
+    """
+    Decorator that switches the current working directory
+    to project's path before executing the wrapped function
+    and switches back to original path after its execution.
+
+    Args:
+        func (function): Function being decorated
+    """
+    def inner(*args, **kwargs):
+        # Get current directory
+        orig_path = os.getcwd()
+
+        project = args and args[0] or False
+
+        if not project or not isinstance(project, Project):
+            raise IntegrityError(
+                'The @use_project_path decorator can be applied '
+                'only to a member function of the Project class.')
+
+        # Switch current directory to project's path
+        os.chdir(project.data.project_path)
+
+        res = func(*args, **kwargs)
+
+        # Switch current directory to original path
+        os.chdir(orig_path)
+        return res
+
+    return inner
 
 
 @dataclasses.dataclass
@@ -62,10 +97,10 @@ class Project(BaseConfig):
 
 # region Class Init
 
-    def __init__(self, command: BaseCommand, **kwargs) -> None:
+    def __init__(self, command: BaseCommand, project_data: dict) -> None:
 
-        self._prepare_project_data(kwargs)
-        validate_project_name(self.data.project_name)
+        self._prepare_project_data(project_data)
+        validate_project_name(self.name)
 
         self.command = command
         self.data.create_mode = self.command.mode == 'create'
@@ -78,14 +113,22 @@ class Project(BaseConfig):
         validate_odoo_version(self.data.odoo_version)
         validate_yml_file(self.data.project_structure)
 
-        # self.conf_path = conf_path
+    @property
+    def name(self) -> str:
+        """
+        Shortly return project's name.
+
+        Returns:
+            str: Project's name
+        """
+        return self.data.project_name
 
     def _prepare_project_data(self, input_data: dict) -> None:
         """
-        Parses the input data and initializes the ProjectData object
+        Parses the input data and initializes the ProjectData object.
 
         Args:
-            input_data (dict): the **kwargs received by __init__
+            input_data (dict): the project_data received by __init__
         """
         project_data = ProjectData()
 
@@ -105,16 +148,16 @@ class Project(BaseConfig):
 
         if not workspace_dir:
             raise ConfigError(
-                f'Cannot determine workspace_dir for the project {self.data.project_name}')
+                f'Cannot determine workspace_dir for the project {self.name}')
 
         self.data.workspace_path = workspace_dir
         self.data.project_path = os.path.join(
-            workspace_dir, self.data.project_name)
+            workspace_dir, self.name)
 
         # Check if project already exists when create is executed
         if self.data.create_mode and os.path.isdir(self.data.project_path):
             raise IntegrityError(
-                f'A directory "{self.data.project_name}" '
+                f'A directory "{self.name}" '
                 f'already exists in "{self.data.workspace_path}"'
             )
 
@@ -124,7 +167,7 @@ class Project(BaseConfig):
     def get_default_config(self) -> dict:
         return {
             'DEFAULT': {
-                'project_name': self.data.project_name,
+                'project_name': self.name,
                 'odoo_version': self.data.odoo_version,
             }
         }
@@ -139,7 +182,7 @@ class Project(BaseConfig):
         """
         project_structure = self.get_structure()
 
-        green_project_name = click.style(self.data.project_name, fg='green')
+        green_project_name = click.style(self.name, fg='green')
         click.echo(f'Creating project "{green_project_name}" using '
                    f'"{self.data.project_structure}" structure '
                    f'and Odoo version {self.data.odoo_version}')
@@ -366,7 +409,7 @@ class Project(BaseConfig):
         Args:
             path (str): The path to the docker_compose.yml file
         """
-        docker_compose = DockerCompose(self.key_paths, self.data.project_name)
+        docker_compose = DockerCompose(self.key_paths, self.name)
 
         with open(path, 'w', encoding='utf8') as file_handle:
             file_handle.write(docker_compose.get_content())
@@ -402,7 +445,7 @@ class Project(BaseConfig):
             'db_port': '5432',
             'db_user': 'odoo',
             'db_password': self.data.pg_pass,
-            'db_name': self.data.project_name,
+            'db_name': self.name,
         }
 
         with open(path, 'w', encoding='utf8') as file_handle:
@@ -450,5 +493,92 @@ class Project(BaseConfig):
         execute_command(['docker', 'network', 'create', self.data.docker_network_name],
                         allow_error=True)
         os.chdir(cur_path)
+
+# endregion
+
+# region Service Control
+
+    def _get_active_project(self) -> 'Project':
+        """
+        Retrieves the name of the currently active project.
+        """
+        project_name = self.command.get_config('active_project')
+        if project_name == self.name:
+            return self
+
+        return Project(
+            command=self.command,
+            project_data={
+                'project_name': project_name
+            })
+
+    def _activate(self):
+        """
+        Sets current project as being active in oCLI's config file.
+        """
+        self.command.set_config('active_project', self.name)
+
+    @use_project_path
+    def start(self) -> None:
+        """
+        Starts the current project
+
+        Raises:
+            IntegrityError: In case the project is already running.
+            UserAbortError: In case another project is running and the user doesn't want to sop it.
+        """
+        active_project = self._get_active_project()
+
+        if active_project.is_running():
+            if active_project == self:
+                raise IntegrityError(
+                    f'The active project `{self.name}` is already started')
+
+            click.echo(
+                f'The project `{active_project.name}` is currently '
+                'running and needs to be stopped.')
+
+            # Get user's confirmation to stop the running project
+            cont = click.confirm(f'Stop `{active_project.name}`?',
+                                 default=True)
+            if not cont:
+                raise UserAbortError(
+                    f'In order to run `{self.name}`, '
+                    f'you first need to stop `{active_project.name}`.')
+            active_project.stop()
+
+        self._activate()
+
+        click.echo(
+            f'Starting the docker containers for project `{self.name}`...')
+        execute_command(['docker-compose', 'up', '--detach'])
+
+    @use_project_path
+    def is_running(self) -> bool:
+        """
+        Checks if `odoo` and `db` for current project are running.
+        """
+        running = execute_command(
+            ['docker-compose', 'ps', '--quiet'], return_output=True)
+        return bool(running)
+
+    @use_project_path
+    def restart(self) -> None:
+        """
+        Restarts the current project
+        """
+        click.echo(
+            f'Restarting the docker containers for project `{self.name}`...')
+        execute_command(['docker-compose', 'down'])
+        execute_command(['docker-compose', 'up', '--detach'])
+
+    @use_project_path
+    def stop(self) -> None:
+        """
+        Stops the current project
+        """
+        click.echo(
+            f'Stopping the docker containers for project `{self.name}`...')
+        execute_command(['docker-compose', 'down'])
 
 # endregion
