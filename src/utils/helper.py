@@ -10,6 +10,7 @@ import random
 import string
 import click
 
+from ..constants import SUPPORTED_ODOO_VERSIONS
 from ..exceptions import InputError, OCLIError
 
 
@@ -31,7 +32,7 @@ def validate_yml_file(file_name: str):
                          'followed by the ".yml" extension')
 
 
-def validate_project_name(project_name):
+def validate_project_name(project_name: str):
     """Validates the project namne to be a
     unicode string with only underscore or dash as separator.
 
@@ -52,7 +53,20 @@ def validate_project_name(project_name):
         raise InputError(f'Invalid project name: "{project_name}"' + err)
 
 
-def execute_command(command:list, allow_error:bool = False) -> None:
+def validate_odoo_version(version: str):
+    """
+    _summary_
+
+    Args:
+        version (str): _description_
+    """
+    if version not in SUPPORTED_ODOO_VERSIONS:
+        allowed = '", "'.join(SUPPORTED_ODOO_VERSIONS)
+        msg = f'Invalid value "{version}" for --odoo-version.{os.linesep}' \
+              f'Allowed values are "{allowed}"'
+        raise InputError(msg)
+
+def execute_command(command: list, allow_error: bool = False) -> None:
     """
     Executes a command and outputs its stdout and stderr to the console.
 
@@ -84,7 +98,8 @@ def execute_command(command:list, allow_error:bool = False) -> None:
         if process.returncode != 0 and process.stderr:
             err = process.stderr.readline().decode("utf-8").strip()
             if not allow_error:
-                raise OCLIError(f'Error executing the command.{os.linesep}{err}')
+                raise OCLIError(
+                    f'Error executing the command.{os.linesep}{err}')
 
 
 def generate_password(length=20) -> str:

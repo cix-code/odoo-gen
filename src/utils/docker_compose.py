@@ -88,9 +88,8 @@ class DockerCompose:  # pylint: disable=too-few-public-methods
     def _set_network(self):
         network_config = {
             self.network_name: {
-                'external': {
-                    'name': self.network_name
-                }
+                'external': 'true',
+                'name': self.network_name
             }
         }
 

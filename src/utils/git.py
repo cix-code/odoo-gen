@@ -3,6 +3,7 @@ Git specific functionality
 """
 
 import subprocess
+from typing import Union
 import click
 
 from ..exceptions import ConfigError
@@ -13,11 +14,14 @@ class GitUtils:  # pylint: disable=too-few-public-methods
     """
     Git specific functions
     """
-    repo: str | None
-    branch: str | None
+    repo: Union[str, None]
+    branch: Union[str, None]
     shallow: bool
 
-    def __init__(self, repo: str | None = None, branch: str | None = None, shallow: bool = False):
+    def __init__(self,
+                 repo: Union[str, None] = None,
+                 branch: Union[str, None] = None,
+                 shallow: bool = False):
         self.repo = repo
         self.branch = branch
         self.shallow = shallow
