@@ -5,8 +5,9 @@ oCLI - odoo Command Line Interface - Helper tool for developers working on multi
 import click
 
 from .commands.create import CreateCommand
-from .commands.check import CheckCommand
-from .commands.remove import RemoveCommand
+from .commands.control import ControlCommand
+# from .commands.check import CheckCommand
+# from .commands.remove import RemoveCommand
 
 from .constants import VERSION
 
@@ -23,5 +24,7 @@ def cli(version=False):
 
 
 CreateCommand.init(cli)
-CheckCommand.init(cli)
-RemoveCommand.init(cli)
+ControlCommand.init(cli)
+
+# CheckCommand.init(cli)
+# RemoveCommand.init(cli)
