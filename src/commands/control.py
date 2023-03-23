@@ -3,9 +3,7 @@
 import click
 
 from ..models.abstract.base_command import BaseCommand
-from ..models.project import Project
 from ..exceptions import handle_error
-from ..exceptions import ConfigError
 
 
 class ControlCommand(BaseCommand):
@@ -13,23 +11,13 @@ class ControlCommand(BaseCommand):
     Class that handles specific commands of controlling project's activity.
     """
 
-    project: Project
     mode: str = 'control'
 
     @handle_error
-    def __init__(self, project_name: str = ''):  # pylint: disable=unused-argument
+    def __init__(self, project_name: str = ''):
         super().__init__()
 
-        project_name = project_name or self.get_config('active_project')
-        if not project_name:
-            raise ConfigError(
-                f'No `active_project` found in {self._config_file_path}')
-
-        self.project = Project(
-            command=self,
-            project_data={
-                'project_name': project_name
-            })
+        self._determine_project(project_name=project_name)
 
     @handle_error
     def start(self) -> None:
@@ -40,11 +28,15 @@ class ControlCommand(BaseCommand):
         self.save_config()
 
     @handle_error
-    def stop(self) -> None:
+    def stop(self, down: bool = False) -> None:
         """
         Function called to execute the `stop` command
+
+        Args:
+            down (bool, optional): Use down instead of stop to remove the containers.
+                                   Defaults to False.
         """
-        self.project.stop()
+        self.project.stop(down=down)
         self.save_config()
 
     @handle_error
@@ -79,12 +71,15 @@ class ControlCommand(BaseCommand):
             command.start()
 
         @cli.command(help='Stops the docker containers for the active project')
-        def stop() -> None:
+        @click.option('-d', '--down',
+                      flag_value=True,
+                      help='Use down instead of stop to remove the containers.')
+        def stop(down: bool = False) -> None:
             """
             Entrypoint for the project `stop` command.
             """
             command = ControlCommand()
-            command.stop()
+            command.stop(down=down)
 
         @cli.command(help='Restarts the docker containers for the active project')
         def restart() -> None:

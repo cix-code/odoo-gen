@@ -81,11 +81,11 @@ def execute_command(command: list,
 
     def read_output(file, mask):  # pylint: disable=unused-argument
         line = file.readline().decode("utf-8").strip()
-        if line:
-            if return_output:
-                return line
-            click.echo(line)
-        return None
+        if not line:
+            return None
+        if return_output:
+            return line
+        return click.echo(line)
 
     sel = selectors.DefaultSelector()
 
@@ -112,6 +112,16 @@ def execute_command(command: list,
             if not allow_error:
                 raise OCLIError(
                     f'Error executing the command.{os.linesep}{err}')
+
+        # Sometimes a part of the output remains in process.stdout
+        # and it's not processed by read_output handler,
+        # therefore this 'hack' is needed
+        if process.stdout:
+            remaining_output = process.stdout.read().decode("utf-8").strip()
+            if return_output:
+                output += sep + remaining_output
+            else:
+                click.echo(output)
 
     return output
 

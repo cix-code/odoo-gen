@@ -2,7 +2,7 @@
 Static values used by oCLI
 """
 # App
-VERSION = '0.0.1'
+VERSION = '0.0.3'
 APP_NAME = 'odoo-cli'
 TAB_SIZE = 4 # Number of space chars composing a Tab
 

@@ -7,7 +7,6 @@ import yaml
 import click
 
 from .abstract.base_config import BaseConfig
-from .abstract.base_command import BaseCommand
 
 from ..constants import DEF_STRUCTURE_YML
 from ..constants import DEF_PROJECT_STRUCTURE
@@ -18,7 +17,8 @@ from ..constants import EXPECTED_KEY_PATHS
 from ..exceptions import \
     ConfigError, \
     IntegrityError, \
-    UserAbortError
+    UserAbortError, \
+    InputError
 
 from ..utils.helper import validate_yml_file
 from ..utils.helper import validate_project_name
@@ -27,7 +27,7 @@ from ..utils.helper import generate_password
 from ..utils.helper import execute_command
 from ..utils.git import GitUtils
 from ..utils.docker_file import DockerFile
-from ..utils.docker_compose import DockerCompose
+from ..utils.docker_compose import DockerCompose as DC
 
 
 def use_project_path(func: callable) -> callable:
@@ -88,7 +88,7 @@ class Project(BaseConfig):
 # region Class properties
 
     data: ProjectData
-    command: BaseCommand
+    command: 'BaseCommand'
 
     key_paths: dict
     git_repos: dict
@@ -97,7 +97,7 @@ class Project(BaseConfig):
 
 # region Class Init
 
-    def __init__(self, command: BaseCommand, project_data: dict) -> None:
+    def __init__(self, command: 'BaseCommand', project_data: dict) -> None:
 
         self._prepare_project_data(project_data)
         validate_project_name(self.name)
@@ -409,7 +409,7 @@ class Project(BaseConfig):
         Args:
             path (str): The path to the docker_compose.yml file
         """
-        docker_compose = DockerCompose(self.key_paths, self.name)
+        docker_compose = DC(self.key_paths, self.name)
 
         with open(path, 'w', encoding='utf8') as file_handle:
             file_handle.write(docker_compose.get_content())
@@ -474,6 +474,7 @@ class Project(BaseConfig):
 
 # region STEP 3: Build docker image
 
+    @use_project_path
     def build(self) -> None:
         """
         Builds the docker image
@@ -482,17 +483,8 @@ class Project(BaseConfig):
             click.echo('Skip building the docker image')
             click.echo('Execute this later by running `ocli build`')
             return
-
-        cur_path = os.getcwd()
-
-        os.chdir(self.data.project_path)
-        click.echo("Building the docker image...")
-        execute_command(['docker-compose', 'build', '--no-cache'])
-
-        click.echo("Creating docker network...")
-        execute_command(['docker', 'network', 'create', self.data.docker_network_name],
-                        allow_error=True)
-        os.chdir(cur_path)
+        DC.build(no_cache=True)
+        DC.create_network(self.data.docker_network_name)
 
 # endregion
 
@@ -532,7 +524,8 @@ class Project(BaseConfig):
         if active_project.is_running():
             if active_project == self:
                 raise IntegrityError(
-                    f'The active project `{self.name}` is already started')
+                    f'The containers for project `{self.name}` are already running',
+                    show_details=False)
 
             click.echo(
                 f'The project `{active_project.name}` is currently '
@@ -551,16 +544,23 @@ class Project(BaseConfig):
 
         click.echo(
             f'Starting the docker containers for project `{self.name}`...')
-        execute_command(['docker-compose', 'up', '--detach'])
+
+        # Check if odoo service exists
+        current_status = DC.status()
+        if not current_status.get('odoo', False):
+            DC.up()
+            return
+
+        DC.start()
 
     @use_project_path
     def is_running(self) -> bool:
         """
         Checks if `odoo` and `db` for current project are running.
         """
-        running = execute_command(
-            ['docker-compose', 'ps', '--quiet'], return_output=True)
-        return bool(running)
+        status = DC.status(running=True)
+
+        return bool(status.get('odoo', False))
 
     @use_project_path
     def restart(self) -> None:
@@ -569,16 +569,75 @@ class Project(BaseConfig):
         """
         click.echo(
             f'Restarting the docker containers for project `{self.name}`...')
-        execute_command(['docker-compose', 'down'])
-        execute_command(['docker-compose', 'up', '--detach'])
+
+        DC.stop()
+        DC.start()
 
     @use_project_path
-    def stop(self) -> None:
+    def stop(self, down: bool = False) -> None:
         """
         Stops the current project
+
+        Args:
+            down (bool, optional): Use down instead of stop to remove the containers.
+                                   Defaults to False.
         """
         click.echo(
             f'Stopping the docker containers for project `{self.name}`...')
-        execute_command(['docker-compose', 'down'])
+
+        if down:
+            DC.down()
+            return
+
+        DC.stop()
+
+# endregion
+
+# region Info
+
+    @use_project_path
+    def show_logs(self, follow: bool = False, service: str = '') -> None:
+        """
+        Show or follow the logs of all or specified container.
+
+        Args:
+            service (str, optional): Service to display the logs for. Defaults to ''.
+            follow (bool, optional): Follow log output. Defaults to False.
+        """
+        click.echo(
+            f'Showing logs for the project `{self.name}`...')
+
+        command = ['docker', 'compose', 'logs']
+        if follow:
+            command.append('--follow')
+
+        if service:
+            # Getting services from the docker compose
+            service_lines = execute_command(
+                ['docker', 'compose', 'ps', '--services'], return_output=True)
+            services = service_lines.split(os.linesep)
+            if service not in services:
+                raise InputError(
+                    f'Invalid value "{service}" for a service. Allowed values: {services}')
+
+            command.append(service)
+
+        execute_command(command)
+
+    @use_project_path
+    def show_status(self):
+        """
+        Outputs status info about the project
+        """
+        click.echo(f'  Name: {self.name}')
+        click.echo(f'  Path: {self.data.project_path}')
+        click.echo('  Containers:')
+
+        status = DC.status()
+        for service, cont_data in status.items():
+            state = cont_data['state']
+            if state == 'exited':
+                state += f", code {cont_data['exit_code']}"
+            click.echo(f'    - {service}: {state}')
 
 # endregion
