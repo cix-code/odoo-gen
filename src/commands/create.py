@@ -13,8 +13,6 @@ class CreateCommand(BaseCommand):
     Class that handles specific part of creating a new Odoo development project.
     """
 
-    project: Project
-
     mode: str = 'create'
 
     @handle_error

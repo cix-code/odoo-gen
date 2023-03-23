@@ -9,13 +9,16 @@ import click
 class OCLIError(BaseException):
     "Abstract oCLI Exception"
 
-    message = 'Unexpected Error'
-    details = 'Command terminated due to an unexpected error.'
-    abort = True
+    message: str = 'Unexpected Error'
+    details: str = 'Command terminated due to an unexpected error.'
+    show_details: bool = True
+    abort: bool = True
 
-    def __init__(self, message, *args: object) -> None:
+    def __init__(self, message: str,
+                 show_details: bool = True) -> None:
         self.message = message
-        super().__init__(*args)
+        self.show_details = show_details
+        super().__init__()
 
     def display_details(self) -> None:
         """
@@ -23,7 +26,9 @@ class OCLIError(BaseException):
         """
 
         click.echo(self.message)
-        click.echo(self.details)
+        if self.show_details:
+            click.echo(self.details)
+
 
 class UserAbortError(OCLIError):
     """
@@ -31,11 +36,13 @@ class UserAbortError(OCLIError):
     """
     details = 'Command terminated by user.'
 
+
 class ConfigError(OCLIError):
     """
     Exception raised when configuration is invalid.
     """
     details = 'Command terminated due to a configuration error.'
+
 
 class InputError(OCLIError):
     """
@@ -43,11 +50,13 @@ class InputError(OCLIError):
     """
     details = 'Command terminated due to an invalid input.'
 
+
 class IntegrityError(OCLIError):
     """
     Exception raised when inconsistency is found and process can't continue.
     """
     details = 'Command terminated due to an inconsistency.'
+
 
 def handle_error(func: callable) -> callable:
     """

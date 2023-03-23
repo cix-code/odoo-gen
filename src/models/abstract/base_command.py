@@ -4,14 +4,18 @@ import os
 import click
 
 from .base_config import BaseConfig
+from ..project import Project
 from ...constants import APP_NAME
-from ...exceptions import UserAbortError
+from ...exceptions import \
+    UserAbortError, \
+    ConfigError
 
 
 class BaseCommand(BaseConfig):
     """Abstract class inherited by all commands of oCLI"""
 
     mode: str
+    project: Project
 
     def __init__(self) -> None:
         # Init config
@@ -52,6 +56,30 @@ class BaseCommand(BaseConfig):
             str: The path.
         """
         return self._config_path
+
+    def _determine_project(self, project_name: str = ''):
+        """
+        Initiates the project from arg or from config
+        and assigns it to self.project
+
+        Args:
+            project_name (str, optional): Desired project name.
+                                          Defaults to ''.
+
+        Raises:
+            ConfigError: When no argument is passed
+                         and no active project found in config.
+        """
+        project_name = project_name or self.get_config('active_project')
+        if not project_name:
+            raise ConfigError(
+                f'No `active_project` found in {self._config_file_path}')
+
+        self.project = Project(
+            command=self,
+            project_data={
+                'project_name': project_name
+            })
 
     @staticmethod
     def init(cli) -> None:
