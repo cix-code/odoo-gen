@@ -1,9 +1,9 @@
 """
-oCLI sources folder
+oGen sources folder
 """
 
 from . import constants
 from . import models
 from . import commands
-from . import ocli
+from . import ogen
 from . import utils

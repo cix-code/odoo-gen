@@ -1,4 +1,4 @@
-"""Common part of all `commands` that oCLI can execute"""
+"""Common part of all `commands` that oGen can execute"""
 
 import os
 import click
@@ -12,7 +12,7 @@ from ...exceptions import \
 
 
 class BaseCommand(BaseConfig):
-    """Abstract class inherited by all commands of oCLI"""
+    """Abstract class inherited by all commands of oGen"""
 
     mode: str
     project: Project
@@ -22,8 +22,8 @@ class BaseCommand(BaseConfig):
         app_path = click.get_app_dir(APP_NAME)
 
         self._config_path = app_path
-        self._config_file = 'ocli.conf'
-        self._config_header = f'# This is the configuration file for oCLI{os.linesep}' \
+        self._config_file = 'ogen.conf'
+        self._config_header = f'# This is the configuration file for oGen{os.linesep}' \
             f'# Do not change this file manually{os.linesep}{os.linesep}'
 
         super().__init__()
@@ -37,7 +37,7 @@ class BaseCommand(BaseConfig):
         cont = click.confirm('Continue?', default=True)
         if not cont:
             important = click.style('Important!', fg='red')
-            raise UserAbortError(f'{important} Execute the `ocli` command in the '
+            raise UserAbortError(f'{important} Execute the `ogen` command in the '
                                  'folder that will be your workspace.')
 
         return {
@@ -82,13 +82,13 @@ class BaseCommand(BaseConfig):
             })
 
     @staticmethod
-    def init(cli) -> None:
+    def init(gen) -> None:
         """
         Abstract definition for the `init` function.
-        It is responsible for attaching the command to the oCLI.
+        It is responsible for attaching the command to the oGen.
 
         Argument:
-            cli: The `cli` group function.
+            gen: The `gen` group function.
 
         Raises:
             NotImplementedError: This should never be reached

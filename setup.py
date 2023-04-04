@@ -1,5 +1,5 @@
 """
-oCLI setuptools definition
+oGen setuptools definition
 """
 
 from setuptools import setup, find_packages
@@ -7,7 +7,7 @@ from src.constants import VERSION
 
 
 setup(
-    name='ocli',
+    name='ogen',
     version=VERSION,
     packages=find_packages(),
     include_package_data=True,
@@ -18,6 +18,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        ocli=src.ocli:cli
+        ogen=src.ogen:gen
     ''',
 )
