@@ -1,5 +1,5 @@
-# odoo-cli
-CLI that helps Odoo developers to manage and run their projects.
+# odoo-gen
+Project Generator that helps Odoo developers to manage and run their projects.
 
 ## Features
 
@@ -7,5 +7,5 @@ CLI that helps Odoo developers to manage and run their projects.
 
 ## Configuration
 
-When first run, the CLI will create a config file under `[user_config_path]/odoo-cli/ocli.conf`.
-It will prompt the user to confirm the workspace folder. 
+The generator will create a config file under `[user_config_path]/odoo-gen/ogen.conf`.
+It will prompt the user to confirm the workspace folder.

@@ -32,21 +32,21 @@ class InfoCommand(BaseCommand):
         """
         Function called to execute the `restart` command
         """
-        click.echo(f'oCLI version {VERSION}')
+        click.echo(f'oGen version {VERSION}')
         click.echo('--------------------')
         click.echo('Active project:')
         self.project.show_status()
 
     @staticmethod
-    def init(cli) -> None:
+    def init(gen) -> None:
         """
-        Attaches the `logs`, `info`, `status` commands to the CLI.
+        Attaches the `logs`, `info`, `status` commands to the Generator.
 
         Argument:
-            cli: The `cli` group function.
+            gen: The `gen` group function.
         """
 
-        @cli.command(help='View output from containers')
+        @gen.command(help='View output from containers')
         @click.argument('service',
                         required=False)
         @click.option('-f', '--follow',
@@ -63,7 +63,7 @@ class InfoCommand(BaseCommand):
             command = InfoCommand()
             command.logs(follow=follow, service=service)
 
-        @cli.command(help='Shows status info about the active project')
+        @gen.command(help='Shows status info about the active project')
         def status() -> None:
             """
             Entrypoint for the status command.

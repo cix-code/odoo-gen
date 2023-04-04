@@ -7,7 +7,7 @@ import click
 
 
 class OCLIError(BaseException):
-    "Abstract oCLI Exception"
+    "Abstract oGen Exception"
 
     message: str = 'Unexpected Error'
     details: str = 'Command terminated due to an unexpected error.'

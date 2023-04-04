@@ -48,15 +48,15 @@ class ControlCommand(BaseCommand):
         self.save_config()
 
     @staticmethod
-    def init(cli) -> None:
+    def init(gen) -> None:
         """
-        Attaches the `start`, `stop`, `restart` commands to the CLI.
+        Attaches the `start`, `stop`, `restart` commands to the Generator.
 
         Argument:
-            cli: The `cli` group function.
+            gen: The `gen` group function.
         """
 
-        @cli.command(help='Starts the docker containers for the active project')
+        @gen.command(help='Starts the docker containers for the active project')
         @click.argument('project_name', required=False)
         def start(project_name: str = '') -> None:
             """
@@ -70,7 +70,7 @@ class ControlCommand(BaseCommand):
             )
             command.start()
 
-        @cli.command(help='Stops the docker containers for the active project')
+        @gen.command(help='Stops the docker containers for the active project')
         @click.option('-d', '--down',
                       flag_value=True,
                       help='Use down instead of stop to remove the containers.')
@@ -81,7 +81,7 @@ class ControlCommand(BaseCommand):
             command = ControlCommand()
             command.stop(down=down)
 
-        @cli.command(help='Restarts the docker containers for the active project')
+        @gen.command(help='Restarts the docker containers for the active project')
         def restart() -> None:
             """
             Entrypoint for the project `restart` command.

@@ -162,7 +162,7 @@ class Project(BaseConfig):
             )
 
         self._config_path = self.data.project_path
-        self._config_file = '.ocli.conf'
+        self._config_file = '.ogen.conf'
 
     def get_default_config(self) -> dict:
         return {
@@ -260,7 +260,7 @@ class Project(BaseConfig):
 
     def create_default_structure(self):
         """
-        Generates the default.yml file that represents default structure supported by oCLI
+        Generates the default.yml file that represents default structure supported by oGen
         """
         f_path = os.path.join(self.command.conf_dir, DEF_STRUCTURE_YML)
 
@@ -270,10 +270,10 @@ class Project(BaseConfig):
         # Save the yml file
         with open(f_path, 'w', encoding='utf8') as yml_file:
             yml_file.writelines([
-                f'# This is the default project structure for oCLI{os.linesep}',
+                f'# This is the default project structure for oGen{os.linesep}',
                 f'# !!! Do not change this file{os.linesep}',
                 '# If you need a custom structure copy this file and then run the '
-                f'`ocli create [PROJECT_NAME] -s [CUSTOM_NAME].yml`{os.linesep}',
+                f'`ogen create [PROJECT_NAME] -s [CUSTOM_NAME].yml`{os.linesep}',
                 os.linesep
             ])
 
@@ -481,7 +481,7 @@ class Project(BaseConfig):
         """
         if self.data.no_build:
             click.echo('Skip building the docker image')
-            click.echo('Execute this later by running `ocli build`')
+            click.echo('Execute this later by running `ogen build`')
             return
         DC.build(no_cache=True)
         DC.create_network(self.data.docker_network_name)
@@ -506,7 +506,7 @@ class Project(BaseConfig):
 
     def _activate(self):
         """
-        Sets current project as being active in oCLI's config file.
+        Sets current project as being active in oGen's config file.
         """
         self.command.set_config('active_project', self.name)
 

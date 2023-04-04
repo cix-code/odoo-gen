@@ -1,9 +1,9 @@
 """
-Static values used by oCLI
+Static values used by oGen
 """
 # App
-VERSION = '0.0.3'
-APP_NAME = 'odoo-cli'
+VERSION = '0.0.4'
+APP_NAME = 'odoo-gen'
 TAB_SIZE = 4 # Number of space chars composing a Tab
 
 # Odoo

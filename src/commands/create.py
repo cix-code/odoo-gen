@@ -33,18 +33,22 @@ class CreateCommand(BaseCommand):
 
         self.project.build()
 
+        active_project = self.get_config('active_project')
+        if not active_project:
+            self.set_config('active_project', self.project.name)
+
         self.save_config()
 
     @staticmethod
-    def init(cli) -> None:
+    def init(gen) -> None:
         """
-        Attaches the `create` command to the CLI.
+        Attaches the `create` command to the Generator.
 
         Argument:
-            cli: The `cli` group function.
+            gen: The `gen` group function.
         """
 
-        @cli.command(help='Create a new project')
+        @gen.command(help='Create a new project')
         @click.argument('project_name', required=True)
         @click.option('-s', '--structure',
                       help='Custom project structure defined in configuration folder.')
