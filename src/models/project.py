@@ -484,6 +484,10 @@ class Project(BaseConfig):
             click.echo('Execute this later by running `ogen build`')
             return
         DC.build(no_cache=True)
+
+        if not self.data.docker_network_name:
+            self.data.docker_network_name = f'net_{self.name}'
+
         DC.create_network(self.data.docker_network_name)
 
 # endregion
