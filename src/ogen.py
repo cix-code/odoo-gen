@@ -5,6 +5,7 @@ oGen - odoo Command Line Interface - Helper tool for developers working on multi
 import click
 
 from .commands import CreateCommand
+from .commands import BuildCommand
 from .commands import ControlCommand
 from .commands import InfoCommand
 
@@ -23,5 +24,6 @@ def gen(version=False):
 
 
 CreateCommand.init(gen)
+BuildCommand.init(gen)
 ControlCommand.init(gen)
 InfoCommand.init(gen)
