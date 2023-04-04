@@ -57,6 +57,9 @@ class DockerCompose:  # pylint: disable=too-few-public-methods
                 f'{db_data_path}:/var/lib/postgresql/data'
             ],
             'env_file': ['.env'],
+            'ports': [
+                '5432:5432',
+            ],
             'networks': [
                 self.network_name
             ],
@@ -147,13 +150,12 @@ class DockerCompose:  # pylint: disable=too-few-public-methods
         """
         # Check if docker network already exists
         networks = execute_command(
-            ['docker', 'network', 'ls', '--format', 'json'],
+            ['docker', 'network', 'ls', '--format', '{{.Name}}'],
             return_output=True
         ).split(os.linesep)
 
         for net in networks:
-            network = json.loads(net)
-            if network['Name'] == name:
+            if net == name:
                 click.echo(
                     f'Network `{name}` already exists. Skipping creation.')
                 return
