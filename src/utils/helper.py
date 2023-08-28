@@ -10,6 +10,8 @@ import random
 import string
 import click
 
+from subprocess import PIPE, STDOUT
+
 from ..constants import SUPPORTED_ODOO_VERSIONS
 from ..exceptions import InputError, OCLIError
 
@@ -70,6 +72,12 @@ def validate_odoo_version(version: str):
 def execute_command(command: list,
                     allow_error: bool = False,
                     return_output: bool = False) -> str:
+    output = subprocess.check_output(command, encoding="utf8").strip()
+    return output
+
+def execute_command_old(command: list,
+                    allow_error: bool = False,
+                    return_output: bool = False) -> str:
     """
     Executes a command and outputs its stdout and stderr to the console.
 
@@ -124,7 +132,6 @@ def execute_command(command: list,
                 click.echo(output)
 
     return output
-
 
 def generate_password(length=20) -> str:
     """
