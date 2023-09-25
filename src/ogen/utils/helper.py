@@ -71,9 +71,17 @@ def validate_odoo_version(version: str):
 
 def execute_command(command: list,
                     allow_error: bool = False,
-                    return_output: bool = False) -> str:
-    output = subprocess.check_output(command, encoding="utf8").strip()
-    return output
+                    return_output: bool = False) -> str|bool:
+    if return_output:
+        return subprocess.check_output(command, encoding="utf8").strip()
+    try:
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError as err:
+        if allow_error:
+            return False
+        raise OCLIError(f'Error executing the command.{os.linesep}{err}') \
+            from err
+    return True
 
 def execute_command_old(command: list,
                     allow_error: bool = False,
