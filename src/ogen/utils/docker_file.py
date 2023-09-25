@@ -59,7 +59,7 @@ class DockerFile:
         self._al('', 0)
 
     def _add_header_part(self) -> None:
-        self._al('FROM debian:bullseye-slim')
+        self._al('FROM python:3.11.5-bookworm')
         self._al('SHELL ["/bin/bash", "-xo", "pipefail", "-c"]')
 
         self._add_spacer()
@@ -104,20 +104,20 @@ class DockerFile:
 
         wk_urls = {
             'x86_64': {
-                'checksum': 'cecbf5a6abbd68d324a7cd6c51ec843d71e98951',
+                'checksum': 'e9f95436298c77cc9406bd4bbd242f4771d0a4b2',
                 'url': 'https://github.com/wkhtmltopdf/packaging/releases/'
-                       'download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.bullseye_amd64.deb'
+                        'download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_amd64.deb'
             },
             'arm': {
-                'checksum': 'abf9e031dd561b46e82744b72588d9c5d4c303ca',
+                'checksum': '77bc06be5e543510140e6728e11b7c22504080d4',
                 'url': 'https://github.com/wkhtmltopdf/packaging/releases/'
-                       'download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.bullseye_arm64.deb'
+                        'download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_arm64.deb'
             },
             'i386': {
-                'checksum': '4b1b904b5c22e751e01681470b5603908533f1dd',
+                'checksum': '4bc83b4e45224000813c81ce6b52732565cb293e',
                 'url': 'https://github.com/wkhtmltopdf/packaging/releases/'
-                       'download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.bullseye_i386.deb'
-            }
+                        'download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_i386.deb'
+            },
         }
 
         # Determine CPU type and fallback on amd64 if not valid
@@ -143,7 +143,7 @@ class DockerFile:
     def _add_install_pg_client(self):
         self._al('# Install latest postgresql-client', 0)
         self._al("RUN echo 'deb http://apt.postgresql.org/pub/repos/apt/ "
-                 "bullseye-pgdg main' > /etc/apt/sources.list.d/pgdg.list \\", 0)
+                 "bookworm-pgdg main' > /etc/apt/sources.list.d/pgdg.list \\", 0)
         self._al('&& GNUPGHOME="$(mktemp -d)" \\', 1)
         self._al('&& export GNUPGHOME \\')
         self._al("&& repokey='B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8' \\")
